@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:c="http://www.springframework.org/schema/c" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:flow="http://www.springframework.org/schema/webflow-config"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:lang="http://www.springframework.org/schema/lang" xmlns:osgi="http://www.springframework.org/schema/osgi"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+          http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+          http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+          http://www.springframework.org/schema/webflow-config http://www.springframework.org/schema/webflow-config/spring-webflow-config-2.0.xsd
+          http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.3.xsd
+          http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.3.xsd
+          http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-4.3.xsd
+          http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi-1.2.xsd
+          http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+          http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd
+          http://www.springframework.org/schema/mvc  http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+ <!-- It register the beans in context and scan the annotations inside beans and activate them -->
+	<context:component-scan base-package="com.report" />
+
+	<context:property-placeholder location="classpath:db.properties" />
+
+	<!-- Register the messages.properties -->
+	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+  	  	<property name="basename" value="messages" />
+</bean>
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="org.postgresql.Driver" />
+		<property name="url"
+			value="jdbc:postgresql://${db.host}:${db.port}/${db.dbname}?currentSchema=${db.curr.schema}" />
+		<property name="username" value="${db.username}" />
+		<property name="password" value="${db.password}" />
+		<property name="connectionProperties">
+
+			<props>
+				<prop key="socketTimeout">10</prop>
+			</props>
+		</property>
+
+	</bean>
+
+		<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">  
+		<property name="dataSource" ref="dataSource"></property>  
+		</bean>  
+
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="packagesToScan">
+			<array>
+				<value>com.report.entities</value>
+			</array>
+		</property>
+		<property name="dataSource" ref="dataSource" />
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+				<property name="generateDdl" value="false" />
+
+				<property name="showSql" value="true" />
+				<property name="databasePlatform" value="org.hibernate.dialect.PostgreSQLDialect" />
+			</bean>
+		</property>
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- Transactions -->
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+	</bean>
+	
+	    <bean id="multipartResolver"   
+    class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/>  
+	
+	<bean id="sessionFactory"
+            class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+
+			<property name="dataSource">
+			  <ref bean="dataSource" />
+			</property>
+
+			<property name="hibernateProperties">
+			  <props>
+					<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+					<prop key="hibernate.show_sql">true</prop>
+			  </props>
+			</property>
+			<property name="annotatedClasses">
+			<list>
+				  <value>com.report.service.RegisterService</value> <!-- Entity classes-->
+			</list>
+			</property>
+
+      </bean>
+	<!-- enable the configuration of transactional behavior based on annotations -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<mvc:resources mapping="/resources/**" location="/resources/"
+		cache-period="31556926" />
+		
+	<!-- mvc:annotation-driven sets you your Spring context to allow for dispatching requests with annotated controller 
+	methods using annotations such as @RequestMapping, @ExceptionHandler, and others. -->	
+	<mvc:annotation-driven />
+
+</beans>
